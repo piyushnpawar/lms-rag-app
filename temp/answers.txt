@@ -1,0 +1,37 @@
+curl -X POST http://localhost:8000/hackrx/run -H 'Content-Type: application/json' --data-binary @temp/questions.json
+
+{"answers":[
+  "Yes, the Grace Period for payment of the premium is thirty days. Coverage is not available during the grace period.\n    <|end_of_text|>",
+
+  "Expenses related to the treatment of a Pre-Existing Disease (PED) and its direct complications shall be excluded until the expiry of thirty six (36) months of continuous coverage after the date of inception of the first policy. In case of enhancement of sum insured the exclusion shall apply afresh to the extent of sum insured increase.",
+
+  "Yes, the policy covers maternity expenses, which include medical treatment expenses traceable to childbirth (including complicated deliveries and caesarean sections incurred during Hospitalization) and expenses towards lawful medical termination of pregnancy during the Policy Period.
+  \n\nHowever, there are exclusions:\n
+  1.  Female insured persons below 18 years and above 45 years of age are not covered.\n
+  2.  Delivery or termination within a waiting period of 24 months is not covered, unless it's a delivery, miscarriage, or abortion induced by accident.\n
+  3.  Coverage is limited to two deliveries or terminations or either has been paid under the Policy and its Renewals.\n
+  4.  More than one delivery or lawful medical termination of pregnancy during a single Policy Period is not covered.\n
+  5.  Maternity Expenses of Surrogate Mother are not covered, unless claim is admitted under Section 3.1.15 (Infertility).\n
+  6.  Ectopic pregnancy is covered under ‘In-patient treatment’, provided such pregnancy is established by medical reports.\n
+  7.  Pre and post hospitalisation expenses, other than pre and post natal treatment, are not covered.","The waiting period for cataract is two years of continuous coverage.\n    <|eot_id|>",
+
+  "Yes, the company shall indemnify the Medical Expenses incurred in respect of an organ donor’s Hospitalisation during the Policy Period for harvesting of the organ donated to an Insured Person, provided that:\n
+  i. The organ donation confirms to the Transplantation of Human Organs Act 1994 (and its amendments from time to time).\n
+  ii. The organ is used for an Insured Person and the Insured Person has been medically advised to undergo an organ transplant\n
+  iii. The Medical Expenses shall be incurred in respect of the organ donor as an in-patient in a Hospital.\n
+  iv. Claim has been admitted under In-patient Treatment Section in respect of the Insured Person undergoing the organ transplant.\n    <|file_separator|>",
+
+  "On renewal of policies with a term of one year, a No Claim Discount (NCD) of a flat 5% shall be allowed on the base premium, provided claims are not reported in the expiring Policy. On renewal of policies with a term exceeding one year, the NCD amount with respect to each claim-free policy year shall be aggregated and allowed on renewal, but the aggregate amount of NCD allowed shall not exceed a flat 5% of the total base premium for the term of the policy.\n    <|eot_id|>",
+
+  "Yes, expenses for health check-ups are reimbursed at the end of a block of two continuous policy years, provided the Policy has been continuously renewed with the Company without a break. The expenses payable are subject to the limit stated in the Table of Benefits. The health check-up benefit is: Every 2 years, up to INR 5,000; Every 2 years, up to INR 7,500; Every 2 years, up to INR 10,000.\n    <|eot_id|>",
+  
+  "The policy defines \"Hospital\" as any institution established for in-patient care and day care treatment of disease/injuries, registered with local authorities under the Clinical Establishments (Registration and Regulation) Act, 2010, or complying with specific minimum criteria. These criteria include:\n\n
+  1.  Qualified nursing staff under its employment round the clock.\n
+  2.  At least ten inpatient beds in towns with a population of less than ten lacs and fifteen inpatient beds in all other places.\n
+  3.  Qualified medical practitioner(s) in charge round the clock.\n
+  4.  A fully equipped operation theatre of its own where surgical procedures are carried out.\n
+  5.  Maintains daily records of patients accessible to the Company’s authorized personnel.\n    <|eot_id|>",
+  
+  "Yes, AYUSH treatment is covered under Allopathy, AYUSH, subject to the Sum Insured (SI) in Plans A, B, and C.","Yes, for Plan A:\n*   Room Charges: Up to 1% of Sum Insured (SI) or actual, whichever is lower.\n*   ICU Charges: Up to 2% of SI or actual, whichever is lower.\n    <|eot_id|>"
+  ]
+}
