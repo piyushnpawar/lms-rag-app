@@ -5,14 +5,14 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - sqlite_data:/data/sqlite
+      - sqlite_data:/data
     environment:
       - DATABASE_URL=sqlite:////data/rag_cache.db
       - QDRANT_URL=http://qdrant:6333
       - GOOGLE_API_KEY=${GOOGLE_API_KEY}
     depends_on:
-      - qdrant
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+      - vector-db
+    command: uvicorn main:app --host 0.0.0.0 --port 8000
   vector-db:
     image: qdrant/qdrant
     ports:
@@ -22,11 +22,10 @@ services:
   sqlite:
     image: coleifer/sqlite-web
     ports:
-      - "8080:8080"  # admin UI port
+      - "8080:8080" # admin UI port
     volumes:
       - sqlite_data:/data
     command: sqlite_web --host 0.0.0.0 /data/rag_cache.db
-
 
 volumes:
   qdrant_storage:

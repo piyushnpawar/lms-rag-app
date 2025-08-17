@@ -7,7 +7,7 @@ from qdrant_client.http.models import Distance, VectorParams
 import hashlib, os, uuid, logging, httpx
 
 QDRANT_COLLECTION_NAME = "Q1"
-QDRANT_URL = "http://localhost:6333"
+QDRANT_URL = os.environ.get("QDRANT_URL")
 EMBEDDING_MODEL = FastEmbedEmbeddings(model_name="BAAI/bge-small-en-v1.5")
 
 try:

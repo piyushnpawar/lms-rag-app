@@ -1,5 +1,5 @@
 from langchain_google_genai import ChatGoogleGenerativeAI
-from dotenv import load_dotenv
+# from dotenv import load_dotenv
 from ingestion import QDRANT_INSTANCE
 import logging, asyncio
 from cache import add_qa_entry
@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 # Load environment variables from .env file
-load_dotenv()
+# load_dotenv()
 # api_key_deepseek = os.getenv("DEEPSEEK_API_KEY")
 
 # Check if the API key is available
@@ -18,7 +18,6 @@ load_dotenv()
 
 # Set up the API client
 try:
-    # Switched to a model known to be available on OpenRouter
     llm = ChatGoogleGenerativeAI(
         model="gemini-2.0-flash",
         max_tokens=250)

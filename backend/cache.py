@@ -4,6 +4,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import IntegrityError
+import os
 
 Base = declarative_base()
 
@@ -14,7 +15,7 @@ class QAEntry(Base):
     question = Column(Text, nullable=False)
     answer = Column(Text, nullable=False)
 
-DATABASE_URL = "sqlite+aiosqlite:////data/rag_cache.db"
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
 engine = create_async_engine(DATABASE_URL, echo=False, future=True)
 AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
@@ -30,7 +31,8 @@ async def get_answer(document_hash: str, question_hash: str):
     async with AsyncSessionLocal() as session:
         stmt = select(QAEntry).filter_by(document_hash=document_hash, question_hash=question_hash)
         result = await session.execute(stmt)
-        return result.scalars().first()
+        response =  result.scalars().first()
+        return response
 
 async def add_qa_entry(document_hash: str, question: str, answer: str):
     question_hash = hash_text(question)

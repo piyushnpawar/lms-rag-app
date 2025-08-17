@@ -12,7 +12,6 @@ root_logger.setLevel(logging.INFO)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
     await init_db()
     yield
 app = FastAPI(lifespan=lifespan)
@@ -33,7 +32,7 @@ async def receive_webhook(request: Request):
         logging.error("Data ingestion failed")
         raise HTTPException(status_code=500, detail="data ingestion failed")
     
-    not_cached = [i for i, result in enumerate(unanswered) if result is None]
+    not_cached = [i for i, result in enumerate(answers) if result is None]
     if not_cached:
         logging.info(f"Answers for questions {not_cached} weren't in cache. Generating answers ...")
         generated_answers = await generateResponse(url,document_hash,unanswered)
