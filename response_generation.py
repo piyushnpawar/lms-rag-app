@@ -1,7 +1,8 @@
 from langchain_google_genai import ChatGoogleGenerativeAI
 from dotenv import load_dotenv
 from ingestion import QDRANT_INSTANCE
-import logging
+import logging, asyncio
+from cache import add_qa_entry
 
 logger = logging.getLogger(__name__)
 
@@ -140,15 +141,27 @@ async def full_rag_pipeline(document_source,document_hash,question) -> str:
     answer = await answer_question_with_context(question, context)
     return answer
 
-
+async def process_question(i,q, document_source, document_hash):
+    print(f"\nQuestion {i+1}: {q}")
+    if q == "Cached":
+        return "Cached"
+    response = await full_rag_pipeline(document_source,document_hash,q)
+    print(f"Answer: {response}")
+    print("-----------------------------------")
+    return response
+    
 async def generateResponse(document_source, document_hash, questions) -> list:
     print("\n--- Starting RAG Query Process ---")
-    answers = []
-    for i, q in enumerate(questions):
-        print(f"\nQuestion {i+1}: {q}")
-        response = await full_rag_pipeline(document_source,document_hash,q)
-        print(f"Answer: {response}")
-        print("-----------------------------------")
-        answers.append(response)
-    print("--- RAG Query Process Complete ---")
-    return answers
+    
+    tasks = [process_question(i,q, document_source,document_hash) for i,q in enumerate(questions)]
+    answers = await asyncio.gather(*tasks)
+    
+    db_entry = [add_qa_entry(document_hash,q,a) for i,(q,a) in enumerate(zip(questions,answers))]
+    check = await asyncio.gather(*db_entry)
+    
+    failed = [i for i, result in enumerate(check) if result is None]
+    if failed:
+        logging.error(f"Failed to insert entries at indexes: {failed}")
+    else:
+        print("--- RAG Query Process Complete ---")
+        return answers
