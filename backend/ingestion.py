@@ -5,6 +5,8 @@ from langchain_qdrant import QdrantVectorStore
 from qdrant_client import QdrantClient
 from qdrant_client.http.models import Distance, VectorParams
 import hashlib, os, uuid, logging, httpx
+from dotenv import load_dotenv
+load_dotenv()
 
 QDRANT_COLLECTION_NAME = "Q1"
 QDRANT_URL = os.environ.get("QDRANT_URL")

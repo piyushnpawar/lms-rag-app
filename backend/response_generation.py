@@ -1,5 +1,5 @@
 from langchain_google_genai import ChatGoogleGenerativeAI
-# from dotenv import load_dotenv
+from dotenv import load_dotenv
 from ingestion import QDRANT_INSTANCE
 import logging, asyncio
 from cache import add_qa_entry
@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 # Load environment variables from .env file
-# load_dotenv()
+load_dotenv()
 # api_key_deepseek = os.getenv("DEEPSEEK_API_KEY")
 
 # Check if the API key is available

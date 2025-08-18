@@ -5,6 +5,8 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import IntegrityError
 import os
+from dotenv import load_dotenv
+load_dotenv()
 
 Base = declarative_base()
 
