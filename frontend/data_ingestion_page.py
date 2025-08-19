@@ -1,23 +1,20 @@
 import streamlit as st
-from lms_handling import loginToLms,logoutOfLms
+from utils.ui_components import displayAttendance,selectFiles,sidebar
 
+st.set_page_config(layout="wide",page_icon="LMS",initial_sidebar_state="expanded")
 st.session_state.setdefault('toggle', False)
 st.session_state.setdefault('ack', "🔴 Logged Out")
 st.session_state.setdefault('uname', "")
 st.session_state.setdefault('pswd', "")
+st.session_state.setdefault('ingesting_data',False)
 
-with st.sidebar.form("login_form",border=False,clear_on_submit=True,enter_to_submit=False):
-    st.write(st.session_state.ack)
-    st.text_input("Username",key="uname",disabled=st.session_state.toggle)
-    st.text_input("Password", key="pswd",disabled=st.session_state.toggle)
-    login, logout = st.columns(2)
-    login.form_submit_button(
-        "Log In",
-        type="primary",
-        disabled=st.session_state.toggle,
-        on_click=loginToLms)
-    logout.form_submit_button(
-        "Log Out",
-        type="primary",
-        disabled=not st.session_state.toggle,
-        on_click=logoutOfLms)
+
+sidebar()
+
+if not st.session_state.ingesting_data and "subjects" in st.session_state:
+    if "subjects" in st.session_state:
+        col_left,gap,col_right=st.columns([0.6,0.05,0.35])
+        with col_right:
+            displayAttendance()
+        with col_left:
+            selectFiles()
