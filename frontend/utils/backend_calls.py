@@ -1,32 +1,37 @@
 import streamlit as st
-import logging, math
+import logging, math, asyncio
 
 
 @st.dialog("Ingesting Data",dismissible=False,width="large")
 def ingestFiles(selected_files):
     if st.session_state.ingesting_data==True:
-        s=st.session_state.s
-        progress_text = "Data ingestion in progress. Please wait."
-        my_bar = st.progress(0, text=progress_text)
-
-        for i,f in enumerate(selected_files):
-            logging.info(f"Getting {f["file_name"]} from {f["file_link"]}")
-            try:
-                file_response=s.get(f["file_link"])
-            except:
-                logging.error(f"An error occured while fetching file: {f["file_name]"]} from {f["file_link"]}")
-                
-            if file_response.status_code == 200:
-                st.markdown(f":green-badge[:material/check: Success] {f["file_name"]}")
-            else:
-                st.markdown(f":red-badge[:material/cross: Failed] {f["file_name"]}")
-            my_bar.progress(math.floor((i+1)/len(selected_files)*100),text=progress_text)
-
+        for f in selected_files:
+            upload_file(f)
         st.session_state.ingesting_data=False
         if st.button("Continue",disabled=st.session_state.ingesting_data):
             st.rerun(scope="app")
     else:
         st.rerun()
 
+def upload_file(file):
+    s=st.session_state.s
+    upload_endpoint="http://localhost:8000/upload"
+    form_data = {
+        "subject": file["subject"],
+        "file_name": file["file_name"],
+        "file_link": file["file_link"],
+        "session_cookies": s.cookies.get_dict()
+     }
+    with st.status(f"Uploading {file["file_name"]}") as status:
+        logging.info(f"Uploading {file["file_name"]}, {file["file_link"]}")
+        response = s.post(upload_endpoint,json=form_data)
+        try:
+            data = response.json()
+            status.update(
+                label=f"{file["file_name"]} : {data.get("status","An error occured")}"
+            )
+        except:
+            status.update(label="An error occured on the backend")
+    
 def reqQuery(prompt):
     pass

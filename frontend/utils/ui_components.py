@@ -9,7 +9,7 @@ def sidebar():
     with st.sidebar.form("login_form",border=False,clear_on_submit=True,enter_to_submit=False):
         st.write(st.session_state.ack)
         st.text_input("Username",key="uname",disabled=st.session_state.toggle)
-        st.text_input("Password", key="pswd",disabled=st.session_state.toggle)
+        st.text_input("Password",key="pswd",disabled=st.session_state.toggle, type="password")
         login, logout = st.columns(2)
         login.form_submit_button(
             "Log In",
@@ -99,7 +99,7 @@ def selectFiles():
                     st.write("\n")
                     st.write("\n")
                     gap,left,right = st.columns([0.4,0.3,0.3])
-                    files = fetchFiles(subject["url"])
+                    files = fetchFiles(subject["url"],selected_subject)
                     for i,f in enumerate(files):
                         lenght_of_column = math.ceil(len(files)/2)
                         file_name=f["file_name"]

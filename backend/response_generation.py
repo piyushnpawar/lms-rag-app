@@ -6,17 +6,8 @@ from cache import add_qa_entry
 
 logger = logging.getLogger(__name__)
 
-
-# Load environment variables from .env file
 load_dotenv()
-# api_key_deepseek = os.getenv("DEEPSEEK_API_KEY")
 
-# Check if the API key is available
-# if not api_key_deepseek:
-#     logging.error("DEEPSEEK_API_KEY not found in environment variables. Please check your .env file.")
-#     exit()
-
-# Set up the API client
 try:
     llm = ChatGoogleGenerativeAI(
         model="gemini-2.0-flash",
@@ -25,12 +16,7 @@ except Exception as e:
     logging.error(f"Failed to initialize Gemini: {e}")
     exit()
 
-# --- RAG Pipeline Refinement ---
-
 async def generate_sub_queries(user_question: str) -> list[str]:
-    """
-    Uses the LLM to generate more specific and robust sub-queries based on the original question.
-    """
     logging.info("Generating sub-queries...")
     sub_query_prompt = f"""
     You are a query generation expert. Your task is to take a single user question about an insurance policy and break it down into 3 highly specific and effective search queries. These queries should be designed to retrieve the most relevant information from a technical document.
@@ -52,9 +38,6 @@ async def generate_sub_queries(user_question: str) -> list[str]:
         return [user_question]
 
 async def retrieve_and_synthesize_context(queries: list[str],document_source,document_hash) -> str:
-    """
-    Performs retrieval using all generated queries and synthesizes the results.
-    """
     full_context = ""
     unique_contexts = set()
 
@@ -81,12 +64,10 @@ async def retrieve_and_synthesize_context(queries: list[str],document_source,doc
             results = await QDRANT_INSTANCE.asimilarity_search(query, k=3, filter=qdrant_filter)
 
             for doc in results:
-                # logging.info(f"Retrieved documents for query '{query}': {doc.metadata.get("title","title not found")}")
                 unique_contexts.add(doc.page_content)
         except Exception as e:
             logging.error(f"Error during retrieval for query '{query}': {e}")
             
-    # This section has been updated with a try-except block
     try:
         full_context = "\n\n---\n\n".join(list(unique_contexts))
         logging.info("Context retrieval and synthesis complete.")
@@ -97,9 +78,6 @@ async def retrieve_and_synthesize_context(queries: list[str],document_source,doc
     return full_context
 
 async def answer_question_with_context(question: str, context: str) -> str:
-    """
-    Uses the final prompt template to get a concise and direct answer from the LLM.
-    """
     logging.info("Generating final answer...")
     final_prompt = f"""
     <|begin_of_text|>
@@ -132,9 +110,6 @@ async def answer_question_with_context(question: str, context: str) -> str:
         return "An error occurred while trying to answer the question."
 
 async def full_rag_pipeline(document_source,document_hash,question) -> str:
-    """
-    Orchestrates the entire refined RAG process.
-    """
     sub_queries = await generate_sub_queries(question)
     context = await retrieve_and_synthesize_context(sub_queries, document_source,document_hash)
     answer = await answer_question_with_context(question, context)

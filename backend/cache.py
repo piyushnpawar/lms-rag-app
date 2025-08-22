@@ -17,7 +17,7 @@ class QAEntry(Base):
     question = Column(Text, nullable=False)
     answer = Column(Text, nullable=False)
 
-DATABASE_URL = os.environ.get("DATABASE_URL")
+DATABASE_URL = os.environ.get("DATABASE_URL",os.environ.get("DATABASE_URL_DEV"))
 
 engine = create_async_engine(DATABASE_URL, echo=False, future=True)
 AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)

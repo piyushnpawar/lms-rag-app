@@ -16,36 +16,47 @@ async def lifespan(app: FastAPI):
     yield
 app = FastAPI(lifespan=lifespan)
 
-
-@app.post("/hackrx/run")
-async def receive_webhook(request: Request):
+@app.post("/upload")
+async def receive_file(request: Request):
     data = await request.json()
+    print(data)
+    subject = data.get("subject")
+    file_name = data.get("file_name")
+    file_link = data.get("file_link")
+    cookies = data.get("session_cookies")
+    
+    status = await ingestData(cookies,subject,file_name,file_link)
+    return {"status": status}
 
-    url = data.get("documents")
-    questions = data.get("questions")
+# @app.post("/query")
+# async def receive_webhook(request: Request):
+#     data = await request.json()
+
+#     url = data.get("documents")
+#     questions = data.get("questions")
     
-    check,document_hash = await ingestData(url)
-    if check:
-        logging.info("Data ingestion complete. Generating responses ...")
-        answers,unanswered = await checkCache(document_hash,questions)
-    else:
-        logging.error("Data ingestion failed")
-        raise HTTPException(status_code=500, detail="data ingestion failed")
+#     check,document_hash = await ingestData(url)
+#     if check:
+#         logging.info("Data ingestion complete. Generating responses ...")
+#         answers,unanswered = await checkCache(document_hash,questions)
+#     else:
+#         logging.error("Data ingestion failed")
+#         raise HTTPException(status_code=500, detail="data ingestion failed")
     
-    not_cached = [i for i, result in enumerate(answers) if result is None]
-    if not_cached:
-        logging.info(f"Answers for questions {not_cached} weren't in cache. Generating answers ...")
-        generated_answers = await generateResponse(url,document_hash,unanswered)
-        if generated_answers:
-            logging.info("Answer generation successful")
-            for i, ans in enumerate(answers):
-                if ans is None:
-                    answers[i] = generated_answers[i]
-            return {"answers":answers}
-        else:
-            logging.error("Answer generation failed")
-        raise HTTPException(status_code=500, detail="answer generation failed")
-    else:
-        logging.info("Answers found in cache. Skipping generation ...")
-        return {"answers":answers}
+#     not_cached = [i for i, result in enumerate(answers) if result is None]
+#     if not_cached:
+#         logging.info(f"Answers for questions {not_cached} weren't in cache. Generating answers ...")
+#         generated_answers = await generateResponse(url,document_hash,unanswered)
+#         if generated_answers:
+#             logging.info("Answer generation successful")
+#             for i, ans in enumerate(answers):
+#                 if ans is None:
+#                     answers[i] = generated_answers[i]
+#             return {"answers":answers}
+#         else:
+#             logging.error("Answer generation failed")
+#         raise HTTPException(status_code=500, detail="answer generation failed")
+#     else:
+#         logging.info("Answers found in cache. Skipping generation ...")
+#         return {"answers":answers}
         

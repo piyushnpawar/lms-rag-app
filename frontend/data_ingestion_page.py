@@ -2,12 +2,6 @@ import streamlit as st
 from utils.ui_components import displayAttendance,selectFiles,sidebar
 
 st.set_page_config(layout="wide",page_icon="LMS",initial_sidebar_state="expanded")
-st.session_state.setdefault('toggle', False)
-st.session_state.setdefault('ack', "🔴 Logged Out")
-st.session_state.setdefault('uname', "")
-st.session_state.setdefault('pswd', "")
-st.session_state.setdefault('ingesting_data',False)
-
 
 sidebar()
 

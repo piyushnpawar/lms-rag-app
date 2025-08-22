@@ -47,7 +47,8 @@ def logoutOfLms():
             st.session_state.toggle=False
             st.session_state.uname=""
             st.session_state.pswd=""
-            st.session_state.subjects=[]
+            del st.session_state["subjects"]
+            del st.session_state["s"]
             st.cache_data.clear()
             st.session_state.ack="🔴 Logged Out"
         else:
@@ -120,7 +121,7 @@ def getLogoutLink(dashboard_html):
     return logout_url
 
 @st.cache_data
-def fetchFiles(subject_url:str):
+def fetchFiles(subject_url:str,subject: str):
     s=st.session_state.s
     files = []
     logging.info(f"Getting Subject html from {subject_url}")
@@ -135,7 +136,8 @@ def fetchFiles(subject_url:str):
         if check:
             file = {
                 "file_name": file_name,
-                "file_link": pdf_link
+                "file_link": pdf_link,
+                "subject": subject
             }
             files.append(file)
     return files
