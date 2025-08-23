@@ -12,7 +12,6 @@ Base = declarative_base()
 
 class QAEntry(Base):
     __tablename__ = "qa_entries"
-    document_hash = Column(String, primary_key=True)
     question_hash = Column(String, primary_key=True)
     question = Column(Text, nullable=False)
     answer = Column(Text, nullable=False)
@@ -29,18 +28,17 @@ async def init_db():
 def hash_text(text: str) -> str:
     return hashlib.sha256(text.encode()).hexdigest()
 
-async def get_answer(document_hash: str, question_hash: str):
+async def get_answer(question_hash: str):
     async with AsyncSessionLocal() as session:
-        stmt = select(QAEntry).filter_by(document_hash=document_hash, question_hash=question_hash)
+        stmt = select(QAEntry).filter_by(question_hash=question_hash)
         result = await session.execute(stmt)
         response =  result.scalars().first()
         return response
 
-async def add_qa_entry(document_hash: str, question: str, answer: str):
+async def add_qa_entry(question: str, answer: str):
     question_hash = hash_text(question)
     async with AsyncSessionLocal() as session:
         entry = QAEntry(
-            document_hash=document_hash,
             question_hash=question_hash,
             question=question,
             answer=answer
@@ -64,13 +62,13 @@ async def update_answer(document_hash: str, question_hash: str, new_answer: str)
             return True
         return False
 
-async def checkCache(document_hash: str, questions) -> tuple[list,list]:
+async def checkCache(questions) -> tuple[list,list]:
     answers = []
     unanswered = []
     for i, q in enumerate(questions):
         q_hash = hash_text(q)
         print(f"\nQuestion {i+1}: {q}")
-        response = await get_answer(document_hash,q_hash)
+        response = await get_answer(q_hash)
         if response:
             print(f"Answer: {response.answer}")
             print("-----------------------------------")

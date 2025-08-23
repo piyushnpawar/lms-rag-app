@@ -39,6 +39,7 @@ async def ingestData(cookies, subject: str, file_name:str, file_source:str) -> s
     session = requests.Session()
     requests.utils.add_dict_to_cookiejar(session.cookies, cookies)
     try:
+        logging.info(f"Getting file: {file_name} from {file_source}")
         response = session.get(file_source)
         response.raise_for_status()
         pdf_content = response.content

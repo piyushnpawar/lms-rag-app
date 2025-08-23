@@ -1,5 +1,5 @@
 import streamlit as st
-import logging, math, asyncio
+import logging, requests,time
 
 
 @st.dialog("Ingesting Data",dismissible=False,width="large")
@@ -34,4 +34,20 @@ def upload_file(file):
             status.update(label="An error occured on the backend")
     
 def reqQuery(prompt):
-    pass
+    s=requests.Session()
+    query_endpoint="http://localhost:8000/query"
+    questions = prompt.split("\n\n")
+    form_data = {
+        "questions": questions
+    }
+    logging.info(f"Querying the backend for questions: {questions}")
+    response = s.post(query_endpoint,json=form_data)
+    try:
+        data = response.json()
+        answers = data.get("answers")
+        for answer in answers:
+            for word in answer.split():
+                yield word + " "
+                time.sleep(0.07)
+    except:
+        logging.error("Querying failed")

@@ -9,6 +9,7 @@ st.session_state.setdefault('ack', "🔴 Logged Out")
 st.session_state.setdefault('ingesting_data',False)
 st.session_state.setdefault('uname',"piy.paw.rt22@dypatil.edu")
 st.session_state.setdefault('pswd',"Piypawar@123")
+st.session_state.setdefault('chat',[])
 
 data_ingestion_page = st.Page("data_ingestion_page.py", title="Ingest Data")
 response_generation_page = st.Page("response_generation_page.py", title="Generate Response")

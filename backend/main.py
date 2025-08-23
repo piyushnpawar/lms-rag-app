@@ -19,7 +19,6 @@ app = FastAPI(lifespan=lifespan)
 @app.post("/upload")
 async def receive_file(request: Request):
     data = await request.json()
-    print(data)
     subject = data.get("subject")
     file_name = data.get("file_name")
     file_link = data.get("file_link")
@@ -28,6 +27,28 @@ async def receive_file(request: Request):
     status = await ingestData(cookies,subject,file_name,file_link)
     return {"status": status}
 
+@app.post("/query")
+async def query_llm(request: Request):
+    data = await request.json()
+    questions = data.get("questions")
+    answers,unanswered = await checkCache(questions)
+    not_cached = [i for i, result in enumerate(answers) if result is None]
+    if not_cached:
+        logging.info(f"Answers for questions {not_cached} weren't in cache. Generating answers ...")
+        generated_answers = await generateResponse(unanswered)
+        if generated_answers:
+            logging.info("Answer generation successful")
+            for i, ans in enumerate(answers):
+                if ans is None:
+                    answers[i] = generated_answers[i]
+                return {"answers":answers}
+        else:
+            logging.error("Answer generation failed")
+            raise HTTPException(status_code=500, detail="answer generation failed")
+    else:
+        logging.info("Answers found in cache. Skipping generation ...")
+        return {"answers":answers}
+    
 # @app.post("/query")
 # async def receive_webhook(request: Request):
 #     data = await request.json()

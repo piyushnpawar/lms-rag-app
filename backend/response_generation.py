@@ -37,32 +37,14 @@ async def generate_sub_queries(user_question: str) -> list[str]:
         logging.error(f"Error generating sub-queries: {e}")
         return [user_question]
 
-async def retrieve_and_synthesize_context(queries: list[str],document_source,document_hash) -> str:
+async def retrieve_and_synthesize_context(queries: list[str]) -> str:
     full_context = ""
     unique_contexts = set()
 
     logging.info(f"Retrieving context for {len(queries)} queries...")
     for query in queries:
         try:
-            qdrant_filter = {
-            "must": [
-                {
-                    "key": "metadata.source",
-                    "match": {
-                        "value": document_source
-                    }
-                },
-                {
-                    "key": "metadata.content_hash",
-                    "match": {
-                        "value": document_hash
-                    }
-                }
-            ]
-        }
-
-            results = await QDRANT_INSTANCE.asimilarity_search(query, k=3, filter=qdrant_filter)
-
+            results = await QDRANT_INSTANCE.asimilarity_search(query, k=3)
             for doc in results:
                 unique_contexts.add(doc.page_content)
         except Exception as e:
@@ -109,28 +91,28 @@ async def answer_question_with_context(question: str, context: str) -> str:
         logging.error(f"Error generating final answer with the LLM: {e}")
         return "An error occurred while trying to answer the question."
 
-async def full_rag_pipeline(document_source,document_hash,question) -> str:
+async def full_rag_pipeline(question) -> str:
     sub_queries = await generate_sub_queries(question)
-    context = await retrieve_and_synthesize_context(sub_queries, document_source,document_hash)
+    context = await retrieve_and_synthesize_context(sub_queries)
     answer = await answer_question_with_context(question, context)
     return answer
 
-async def process_question(i,q, document_source, document_hash):
+async def process_question(i,q):
     print(f"\nQuestion {i+1}: {q}")
     if q == "Cached":
         return "Cached"
-    response = await full_rag_pipeline(document_source,document_hash,q)
+    response = await full_rag_pipeline(q)
     print(f"Answer: {response}")
     print("-----------------------------------")
     return response
     
-async def generateResponse(document_source, document_hash, questions) -> list:
+async def generateResponse(questions) -> list:
     print("\n--- Starting RAG Query Process ---")
     
-    tasks = [process_question(i,q, document_source,document_hash) for i,q in enumerate(questions)]
+    tasks = [process_question(i,q) for i,q in enumerate(questions)]
     answers = await asyncio.gather(*tasks)
     
-    db_entry = [add_qa_entry(document_hash,q,a) for i,(q,a) in enumerate(zip(questions,answers))]
+    db_entry = [add_qa_entry(q,a) for i,(q,a) in enumerate(zip(questions,answers))]
     check = await asyncio.gather(*db_entry)
     
     failed = [i for i, result in enumerate(check) if result is None]
