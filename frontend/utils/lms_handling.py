@@ -144,9 +144,9 @@ def fetchFiles(subject_url:str,subject: str):
 
 def fetchPdfs(file_link):
     s=st.session_state.s
-    logging.info(f"Getting PDF from file link {file_link}")
+    logging.info(f"Getting file from {file_link}")
     pdf_response = s.get(file_link)
     pdf_html = pdf_response.text
-    pattern = r'["\'](https?://[^\s"]+\.(?:pdf|doc|docx|ppt|pptx))'
+    pattern = r'["\'](https?://[^\s"]+\.(?:pdf|docx|pptx))'
     pdf_link = re.search(pattern, pdf_html)
     return (pdf_link.group(1),True) if pdf_link else ("", False)

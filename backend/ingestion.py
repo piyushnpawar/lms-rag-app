@@ -1,10 +1,13 @@
 from langchain_community.document_loaders import PyMuPDFLoader
+from langchain.docstore.document import Document as LangchainDocument
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
 from langchain_qdrant import QdrantVectorStore
 from qdrant_client import QdrantClient
 from qdrant_client.http.models import Distance, VectorParams
-import hashlib, os, uuid, logging, requests
+import hashlib, os, uuid, logging, requests, magic
+from docx import Document
+from pptx import Presentation
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -35,6 +38,13 @@ except:
         embedding=EMBEDDING_MODEL,
     )
 
+SUPPORTED_MIME_TYPES = {
+    'application/pdf',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+}
+
+
 async def ingestData(cookies, subject: str, file_name:str, file_source:str) -> str:
     session = requests.Session()
     requests.utils.add_dict_to_cookiejar(session.cookies, cookies)
@@ -42,42 +52,25 @@ async def ingestData(cookies, subject: str, file_name:str, file_source:str) -> s
         logging.info(f"Getting file: {file_name} from {file_source}")
         response = session.get(file_source)
         response.raise_for_status()
-        pdf_content = response.content
-        document_hash = calculate_pdf_hash(pdf_content)
+        document_content = response.content
+        document_hash = calculate_pdf_hash(document_content)
         logging.info(f"Calculated PDF hash: {document_hash}")
-    except requests.RequestError as e:
-        logging.error(f"Failed to download PDF: {e}")
+    except requests.RequestException as e:
+        logging.error(f"Failed to download file: {e}")
         return "Source invalid"
 
-    # check if the document already exists in the VectorDB
     logging.info("Checking if the content already exists")
     if await check_for_existing_document(document_hash):
         return "Already exists in database"
 
-    # create a temporary file to load the pdf from the binary
-    logging.info("Attempting to load document")
-    temp_file_path = f"temp_{uuid.uuid4()}.pdf"
-    with open(temp_file_path, "wb") as f:
-        f.write(pdf_content)
-    loader = PyMuPDFLoader(temp_file_path)
-    docs = loader.load()
-    # add hash and source metadata
-    for doc in docs:
-        doc.metadata["content_hash"] = document_hash
-        doc.metadata["subject"] = subject
-        doc.metadata["file_name"] = file_name
-        doc.metadata["file_link"] = file_source
-    os.remove(temp_file_path)
-
-    # check if docs is loading
-    if not docs:
-        logging.error("Document loading failed")
-        return "An error occured"
-
-    # split the docs into chunks
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=300)
-    split_docs = text_splitter.split_documents(documents=docs)
-    logging.info("Document chunking complete")
+    check, docs = extract_document(document_content, document_hash, subject, file_name, file_source)
+    if check:
+        text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=300)
+        split_docs = text_splitter.split_documents(documents=docs)
+        logging.info("Document chunking complete")
+    else:
+        logging.info("Document extraction failed")
+        return docs
 
     try:
         await QDRANT_INSTANCE.aadd_documents(split_docs)
@@ -89,6 +82,75 @@ async def ingestData(cookies, subject: str, file_name:str, file_source:str) -> s
 
 def calculate_pdf_hash(pdf_content: bytes) -> str:
     return hashlib.sha256(pdf_content).hexdigest()
+
+def extract_document(document_content, document_hash, subject, file_name, file_source):
+    logging.info("Attempting to load document")
+    mime_type = magic.from_buffer(document_content, mime=True)
+    temp_file_path=""
+    if mime_type not in SUPPORTED_MIME_TYPES:
+        logging.warning(f"Unsupported file type detected: {mime_type}. Skipping ingestion.")
+        return False,"Unsupported file type"
+
+    if mime_type == 'application/pdf':
+        file_extension = ".pdf"
+        temp_file_path = create_temp_file(file_extension,document_content)
+        loader = PyMuPDFLoader(temp_file_path)       
+        docs = loader.load()  
+        for doc in docs:
+            doc.metadata["content_hash"] = document_hash
+            doc.metadata["subject"] = subject
+            doc.metadata["file_name"] = file_name
+            doc.metadata["file_link"] = file_source
+    elif mime_type == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+        file_extension = ".docx"
+        temp_file_path = create_temp_file(file_extension,document_content)
+        document = Document(temp_file_path)
+        full_text = []
+        for paragraph in document.paragraphs:
+            full_text.append(paragraph.text)
+        text_content = "/n".join(full_text)
+        doc_metadata = {
+            "content_hash": document_hash,
+            "subject": subject,
+            "file_name": file_name,
+            "file_link": file_source
+        }
+        docs = [LangchainDocument(
+        page_content=text_content,
+        metadata=doc_metadata
+        )]
+    elif mime_type == 'application/vnd.openxmlformats-officedocument.presentationml.presentation':
+        file_extension = ".pptx"
+        temp_file_path = create_temp_file(file_extension,document_content)
+        prs = Presentation(temp_file_path)
+        full_text = []
+        for slide in prs.slides:
+            for shape in slide.shapes:
+                if hasattr(shape, "has_text_frame") and shape.has_text_frame:
+                    full_text.append(shape.text)
+        doc_metadata = {
+            "content_hash": document_hash,
+            "subject": subject,
+            "file_name": file_name,
+            "file_link": file_source
+        }
+        docs = [Document(page_content="\n".join(full_text), metadata=doc_metadata)]
+    else:
+        logging.error(f"Internal error: Unsupported MIME type {mime_type} passed the check.")
+        return False,"An internal error occurred"
+
+    os.remove(temp_file_path)
+    
+    if not docs:
+        logging.error("Document loading failed")
+        return False, "An error occured"
+    return True, docs
+
+def create_temp_file(file_extension, document_content):
+    temp_file_path = f"temp_{uuid.uuid4()}{file_extension}"
+    with open(temp_file_path, "wb") as f:
+        f.write(document_content)
+    return temp_file_path
 
 async def check_for_existing_document(document_hash: str) -> bool:
     try:
