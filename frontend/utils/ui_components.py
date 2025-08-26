@@ -1,9 +1,11 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
+import plotly.colors as pcolors
 import math
 from utils.backend_calls import ingestFiles
-from utils.lms_handling import loginToLms,logoutOfLms,fetchFiles
+from utils.backend_calls import loginToLms,logoutOfLms,fetchFiles
 
 def sidebar():
     with st.sidebar.form("login_form",border=False,clear_on_submit=True,enter_to_submit=False):
@@ -99,17 +101,23 @@ def selectFiles():
                     st.write("\n")
                     st.write("\n")
                     gap,left,right = st.columns([0.4,0.3,0.3])
-                    files = fetchFiles(subject["url"],selected_subject)
-                    for i,f in enumerate(files):
-                        lenght_of_column = math.ceil(len(files)/2)
-                        file_name=f["file_name"]
-                        file_link=f["file_link"]
-                        col = left if i < lenght_of_column else right
-                        with col:
-                            if st.checkbox(file_name,key=file_link,disabled=st.session_state.ingesting_data):
-                                selected_files.append(f)
-                    st.write("\n")
-                    st.write("\n")
-                    if st.button("Ingest",disabled=st.session_state.ingesting_data):
-                        st.session_state.ingesting_data=True
-                        ingestFiles(selected_files)
+                    try:
+                        files = fetchFiles(selected_subject,subject["url"],)
+                        for i,f in enumerate(files):
+                            lenght_of_column = math.ceil(len(files)/2)
+                            file_name=f["file_name"]
+                            file_link=f["file_link"]
+                            col = left if i < lenght_of_column else right
+                            with col:
+                                if st.checkbox(file_name,key=file_link,disabled=st.session_state.ingesting_data):
+                                    selected_files.append(f)
+                        st.write("\n")
+                        st.write("\n")
+                        if st.button("Ingest",disabled=st.session_state.ingesting_data):
+                            st.session_state.ingesting_data=True
+                            ingestFiles(selected_files)
+                    except:
+                        st.markdown(
+                        '<h6 style="text-align: right;">Failed to fetch files</h6>',
+                        unsafe_allow_html=True
+                    )

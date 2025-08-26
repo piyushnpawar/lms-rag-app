@@ -6,6 +6,7 @@ from langchain_qdrant import QdrantVectorStore
 from qdrant_client import QdrantClient
 from qdrant_client.http.models import Distance, VectorParams
 import hashlib, os, uuid, logging, requests, magic
+import lms_handling
 from docx import Document
 from pptx import Presentation
 from dotenv import load_dotenv
@@ -45,9 +46,9 @@ SUPPORTED_MIME_TYPES = {
 }
 
 
-async def ingestData(cookies, subject: str, file_name:str, file_source:str) -> str:
+async def ingestData(subject: str, file_name:str, file_source:str) -> str:
     session = requests.Session()
-    requests.utils.add_dict_to_cookiejar(session.cookies, cookies)
+    requests.utils.add_dict_to_cookiejar(session.cookies, lms_handling.SESSION_COOKIES)
     try:
         logging.info(f"Getting file: {file_name} from {file_source}")
         response = session.get(file_source)
