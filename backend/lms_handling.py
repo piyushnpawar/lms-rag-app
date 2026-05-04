@@ -2,12 +2,31 @@ import requests, re
 from bs4 import BeautifulSoup
 import logging
 from fastapi import status
+from uuid import uuid4
 
-SESSION_COOKIES = None
-LOGOUT_URL = ""
+LMS_SESSIONS = {}
+
+
+def get_session(session_id: str):
+    if not session_id:
+        return None
+    return LMS_SESSIONS.get(session_id)
+
+
+def get_session_cookies(session_id: str):
+    session = get_session(session_id)
+    if not session:
+        return None
+    return session["cookies"]
+
+
+def build_session(cookies=None):
+    session = requests.Session()
+    if cookies:
+        requests.utils.add_dict_to_cookiejar(session.cookies, cookies)
+    return session
 
 def logIn(username:str, password:str):
-    global SESSION_COOKIES, LOGOUT_URL
     login_url = "https://mydy.dypatil.edu/rait/login/index.php"
     form_data = {
         "uname_static": username,
@@ -22,21 +41,24 @@ def logIn(username:str, password:str):
         logging.info(f"Request Status: {get_response.status_code}, Cookie received: {s.cookies.get_dict()}")
         logging.info(f"Sending login POST request to {login_url}")
         post_response = s.post(login_url, data=form_data)
-    if post_response.status_code == 200:
-        logging.info(f"Request Status: {post_response.status_code}")
-        if "mydy.dypatil.edu/rait/my/" in post_response.url:
-            logging.info("Login Successful")
-            subjects,logout_url = extractLinks(s)
-            SESSION_COOKIES = s.cookies.get_dict()
-            LOGOUT_URL = logout_url
-            return status.HTTP_200_OK, subjects, logout_url
+        if post_response.status_code == 200:
+            logging.info(f"Request Status: {post_response.status_code}")
+            if "mydy.dypatil.edu/rait/my/" in post_response.url:
+                logging.info("Login Successful")
+                subjects,logout_url = extractLinks(s)
+                session_id = str(uuid4())
+                LMS_SESSIONS[session_id] = {
+                    "cookies": s.cookies.get_dict(),
+                    "logout_url": logout_url
+                }
+                return status.HTTP_200_OK, subjects, logout_url, session_id
+            else:
+                logging.info("Login failed. Invalid credentials.")
+                return status.HTTP_401_UNAUTHORIZED, None, None, None
         else:
-            logging.info("Login failed. Invalid credentials.")
-            return status.HTTP_401_UNAUTHORIZED, None, None
-    else:
-        logging.error(f"Login request failed with status code: {post_response.status_code}")
-        logging.error("Response text:", post_response.text)
-        return status.HTTP_503_SERVICE_UNAVAILABLE, None, None
+            logging.error(f"Login request failed with status code: {post_response.status_code}")
+            logging.error("Response text: %s", post_response.text)
+            return status.HTTP_503_SERVICE_UNAVAILABLE, None, None, None
     
 def extractLinks(s):
     dashboard_url="https://mydy.dypatil.edu/rait/my/"
@@ -97,17 +119,18 @@ def getLogoutLink(dashboard_html):
     logging.info(f"Found logout URL: {logout_url}")
     return logout_url
 
-def logOut():
-    global SESSION_COOKIES, LOGOUT_URL
-    s = requests.Session()
-    requests.utils.add_dict_to_cookiejar(s.cookies, SESSION_COOKIES)
-    logout_url = LOGOUT_URL
+def logOut(session_id: str):
+    session = get_session(session_id)
+    if not session:
+        return status.HTTP_401_UNAUTHORIZED
+
+    s = build_session(session["cookies"])
+    logout_url = session["logout_url"]
     try:
         logout_response = s.get(logout_url)
         logout_response.raise_for_status()
         if "mydy.dypatil.edu" in logout_response.url:
-            SESSION_COOKIES = None
-            LOGOUT_URL = ""
+            del LMS_SESSIONS[session_id]
             return status.HTTP_200_OK
         else:
             logging.error("Logout request sent, but the final URL was not the login page.")
@@ -116,9 +139,12 @@ def logOut():
         logging.error(f"An error occurred while logging out: {e}")
         return status.HTTP_500_INTERNAL_SERVER_ERROR
     
-def fetchFiles(subject:str,subject_url: str):
-    s = requests.Session()
-    requests.utils.add_dict_to_cookiejar(s.cookies, SESSION_COOKIES)
+def fetchFiles(session_id: str, subject:str,subject_url: str):
+    cookies = get_session_cookies(session_id)
+    if not cookies:
+        return status.HTTP_401_UNAUTHORIZED, None
+
+    s = build_session(cookies)
     files = []
     try:
         logging.info(f"Getting {subject} html from {subject_url}")

@@ -46,9 +46,13 @@ SUPPORTED_MIME_TYPES = {
 }
 
 
-async def ingestData(subject: str, file_name:str, file_source:str) -> str:
-    session = requests.Session()
-    requests.utils.add_dict_to_cookiejar(session.cookies, lms_handling.SESSION_COOKIES)
+async def ingestData(subject: str, file_name:str, file_source:str, session_id: str) -> str:
+    cookies = lms_handling.get_session_cookies(session_id)
+    if not cookies:
+        logging.error("Upload requested without a valid LMS session")
+        return "Unauthorized session"
+
+    session = lms_handling.build_session(cookies)
     try:
         logging.info(f"Getting file: {file_name} from {file_source}")
         response = session.get(file_source)

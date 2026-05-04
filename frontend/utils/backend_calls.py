@@ -17,6 +17,7 @@ def upload_file(file):
     s = requests.Session()
     upload_endpoint="http://localhost:8000/upload"
     form_data = {
+        "session_id": st.session_state.get("lms_session_id"),
         "subject": file["subject"],
         "file_name": file["file_name"],
         "file_link": file["file_link"],
@@ -70,6 +71,7 @@ def loginToLms():
             st.session_state.toggle=True
             st.session_state.ack="🟢 Logged Into " + st.session_state.uname
             st.session_state.subjects = data.get("subjects")
+            st.session_state.lms_session_id = data.get("session_id")
         elif response.status_code == 401:
             st.sidebar.write("Login failed. Check your credentials.")
             logging.info("Login failed. Invalid credentials.")
@@ -85,12 +87,16 @@ def logoutOfLms():
     logout_endpoint = "http://localhost:8000/logout"
     try:
         logging.info(f"Attempting LMS logout")
-        logout_response = s.get(logout_endpoint)
+        logout_response = s.get(
+            logout_endpoint,
+            params={"session_id": st.session_state.get("lms_session_id")}
+        )
         if logout_response.status_code == 200:
             logging.info("Successfully logged out!")
             st.session_state.toggle=False
             st.session_state.uname=""
             st.session_state.pswd=""
+            st.session_state.lms_session_id = None
             del st.session_state["subjects"]
             st.cache_data.clear()
             st.session_state.ack="🔴 Logged Out"
@@ -104,6 +110,7 @@ def fetchFiles(subject:str,subject_url: str):
     s = requests.Session()
     fetch_endpoint = "http://localhost:8000/fetch"
     form_data = {
+        "session_id": st.session_state.get("lms_session_id"),
         "subject": subject,
         "url": subject_url
     }
